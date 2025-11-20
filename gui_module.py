@@ -75,7 +75,6 @@ def build_motor_controls(parent):
         text=(
             f"Delay (us): {motor_state['delay']*10e5:.0f} u_sec\n"
             f"Steps: {int(motor_state['total_steps'])}\n"
-            f"Total Time: {motor_state['delay']*2*motor_state['total_steps']:.1f} s"
         ),
         justify="left",
     )
