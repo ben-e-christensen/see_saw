@@ -1,15 +1,14 @@
-from gui_module import run_gui
-from location_tracking import track
 import threading
-from gpiozero import InputDevice
+from guis.gui_control import run_control_gui 
+from location_tracking import track
 
 def main():
+    # 1. Start Location Tracking (Background)
     tracking_thread = threading.Thread(target=track, daemon=True)
     tracking_thread.start()
 
-    # Main thread → GUI (motor controls + MCC118 plot)
-    run_gui()
-
+    # 2. Launch Main GUI Application
+    run_control_gui()
 
 if __name__ == '__main__':
     main()

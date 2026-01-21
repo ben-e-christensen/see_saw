@@ -1,14 +1,15 @@
 from gpiozero import OutputDevice
 from time import sleep, time
 import threading
+from states import motor_state
 
 from helpers import calc_spin
 
 
 stop_event = threading.Event()
 
-step = OutputDevice(2)
-direction = OutputDevice(3)
+step = OutputDevice(4)
+direction = OutputDevice(17)
 direction.on()
 
 def motor_control(state, run_time):
@@ -28,6 +29,10 @@ def motor_control(state, run_time):
     
 def reverse_direction():
     direction.value = not direction.value
+    if motor_state['dir'] == 'l':
+        motor_state['dir'] = 'r'
+    elif motor_state['dir'] == 'r':
+        motor_state['dir'] = 'l'
     
 def adjust_speed(state, direction, result_label, inc_val, revs, freq_tk, total_revs_tk):
     
