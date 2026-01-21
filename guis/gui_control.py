@@ -275,13 +275,24 @@ def build_motor_controls(parent):
     def handle_enter(event=None):
         calc_spin(freq.get(), total_revs, motor_state, result_label, freq, total_revs)
 
+    # Wrapper to run calibration in a thread so GUI doesn't freeze
+    def run_calibration_thread():
+        print("Calibration Triggered")
+        # Disable buttons here if you want extra safety
+        t = threading.Thread(target=calibrate, args=(motor_state,))
+        t.start()
+
     buttons = [
         ("Start Motor", lambda: start_motor(motor_state)),
         ("Stop Motor", stop_motor),
+        ("CALIBRATE", run_calibration_thread),  # <--- NEW BUTTON
         ("Speed Up", lambda: adjust_speed(motor_state, 'u', result_label, inc_val, motor_state["revs"], freq, total_revs)),
         ("Slow Down", lambda: adjust_speed(motor_state, 'd', result_label, inc_val, motor_state["revs"], freq, total_revs)),
     ]
-    for text, cmd in buttons: ttk.Button(frame, text=text, command=cmd).pack(pady=2, fill="x")
+    
+    for text, cmd in buttons: 
+        btn = ttk.Button(frame, text=text, command=cmd)
+        btn.pack(pady=2, fill="x")
     
     ttk.Label(frame, text="Increment (RPM):").pack(pady=2)
     ttk.Spinbox(frame, from_=0, to=10, increment=0.1, textvariable=inc_val, width=10).pack()
