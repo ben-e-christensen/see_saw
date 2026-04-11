@@ -12,7 +12,7 @@ from daqhats import mcc118
 import numpy as np 
 
 # Your Logic Modules (Ensure these remain accessible in your path)
-from motor_module import adjust_speed, start_motor, stop_motor, calibrate
+from motor_module import adjust_speed, start_motor, stop_motor
 from helpers import calc_spin, update_tkinter_input_box
 from states import motor_state, temperature_state
 
@@ -24,11 +24,12 @@ from guis.gui_peaks import launch_peak_window
 # --- CONFIG ---
 CHANNEL = 1
 SAMPLE_INTERVAL = 0.01     
-BUFFER_SIZE = 500        
+BUFFER_SIZE = 1000       
 MAX_PEAK_HISTORY = 10000  
-TRIGGER_BELOW = 0.03
-TRIGGER_ABOVE = 0.07
-COOLDOWN_SAMPLES = 400
+TRIGGER_BELOW = -0.01
+TRIGGER_ABOVE = 0.005
+COOLDOWN_SAMPLES = 100
+PEAK_WINDOW_HALF = 10 # Checks 10 samples left, and 10 samples right
 
 data_queue = Queue()
 data_buffer, time_buffer = [], []
@@ -77,7 +78,7 @@ def setup_trial_folder():
     csv_path = os.path.join(trial_folder, "data_log.csv")
     with open(csv_path, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(["Timestamp", "Index", "Raw_Voltage", "Smooth_Voltage", "Direction", "Event_Type","Pressure", "Humidity", "Temperature"])
+        writer.writerow(["Timestamp", "Index", "Raw_Voltage", "Smooth_Voltage", "Direction", "Degrees", "Time Since Fall", "Event_Type","Pressure", "Humidity", "Temperature"])
     
     print(f"Logging to: {csv_path}")
     return csv_path
@@ -133,13 +134,17 @@ def update_plot(root, canvas_live, fig_live, ax_live, line_live,
         if proc_state["cooldown_timer"] > 0:
             proc_state["cooldown_timer"] -= 1
 
-        # Peak Detection Logic
-        if len(proc_state["window"]) == 3:
-            left, mid, right = proc_state["window"]
-            is_valley = (left > mid) and (right > mid)
-            is_peak   = (left < mid) and (right < mid)
-            valid_valley = is_valley and (mid < TRIGGER_BELOW)
-            valid_peak   = is_peak   and (mid > TRIGGER_ABOVE)
+# --- UPGRADED PEAK DETECTION LOGIC ---
+        window_size = (PEAK_WINDOW_HALF * 2) + 1 
+        
+        if len(proc_state["window"]) == window_size:
+            mid_val = proc_state["window"][PEAK_WINDOW_HALF]
+            
+            is_peak = (mid_val == max(proc_state["window"]))
+            is_valley = (mid_val == min(proc_state["window"]))
+            
+            valid_peak = is_peak and (mid_val > TRIGGER_ABOVE)
+            valid_valley = is_valley and (mid_val < TRIGGER_BELOW)
 
             if (valid_valley or valid_peak) and (proc_state["cooldown_timer"] == 0):
                 event_label = "VALLEY" if valid_valley else "PEAK"
@@ -148,18 +153,14 @@ def update_plot(root, canvas_live, fig_live, ax_live, line_live,
                 # Update Peak Logic (Left vs Right)
                 target_X, target_Y = (proc_state["L_X"], proc_state["L_Y"]) if current_dir == 'l' else (proc_state["R_X"], proc_state["R_Y"])
                 target_X.append(proc_state["peak_count"])
-                target_Y.append(mid)
+                target_Y.append(mid_val)
                 
-                # Trim Peak Logic
                 if len(target_X) > MAX_PEAK_HISTORY:
                     target_X.pop(0)
                     target_Y.pop(0)
 
-                # --- PHT DATA CAPTURE ---
-                # 1. Default values
+                # --- PHT DATA CAPTURE (Restored) ---
                 t_val, p_val, h_val = 0.0, 0.0, 0.0 
-
-                # 2. Try to get real values
                 if pht_ui: 
                     try:
                         readings = pht_ui.get('latest_readings', {})
@@ -169,31 +170,30 @@ def update_plot(root, canvas_live, fig_live, ax_live, line_live,
                     except Exception:
                         pass 
 
-                # 3. Append to History
                 pht_history["indices"].append(proc_state["peak_count"])
                 pht_history["temp"].append(t_val)
                 pht_history["pressure"].append(p_val)
                 pht_history["humidity"].append(h_val)
                 
-                # 4. Trim History (FIXED: Uses MAX_PEAK_HISTORY instead of 100)
                 if len(pht_history["indices"]) > MAX_PEAK_HISTORY: 
                     for key in pht_history: 
                         if pht_history[key]: 
                             pht_history[key].pop(0)
 
                 peak_detected = True
-                proc_state["cooldown_timer"] = COOLDOWN_SAMPLES
+                motor_state['peak']=True
+                proc_state["cooldown_timer"] = COOLDOWN_SAMPLES 
                 
-                # Timestamp for UI
                 timestamp_log = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-                current_peak_data = (proc_state["peak_count"], timestamp_log, f"{mid:.3f} V")
-                print(f"#{proc_state['peak_count']} [{event_label}] at {mid:.3f} V")
+                current_peak_data = (proc_state["peak_count"], timestamp_log, f"{mid_val:.3f} V")
+                print(f"#{proc_state['peak_count']} [{event_label}] at {mid_val:.3f} V")
 
+            # Pop the oldest point to keep the window rolling
             proc_state["window"].pop(0)
         
         # Timestamp for CSV
         timestamp_log = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-        csv_data.append([timestamp_log, current_idx, raw_val, smooth_val, current_dir, event_label, temperature_state['p'],temperature_state['h'],temperature_state['t'],])
+        csv_data.append([timestamp_log, current_idx, raw_val, smooth_val, current_dir, motor_state['deg'], motor_state['time_since_peak'], event_label, temperature_state['p'],temperature_state['h'],temperature_state['t'],])
         new_pts += 1
 
     # Write to CSV

@@ -8,13 +8,16 @@ motor_state = {
     'running': False,
     'dir': 'l',
     'calibrated': False,
-    'no_of_steps': 0
+    'no_of_steps': 0,
+    'deg': 0.0,
+    'peak': False,
+    'time_since_peak': 0.0,
 }
 
 temperature_state = {
-    'p': 0,
-    'h': 0,
-    't': 0,
+    'p': 0.0,
+    'h': 0.0,
+    't': 0.0,
 }
 
 experiment_state = {

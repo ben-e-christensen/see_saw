@@ -24,6 +24,10 @@ def motor_control(state, run_time):
         sleep(state['delay'])
         step.off()
         sleep(state['delay'])
+        if motor_state['dir'] == 'l':
+            motor_state['deg'] += 360/motor_state['spr']
+        else: 
+            motor_state['deg'] -= 360/motor_state['spr']
     elapsed = time() - start_time
     print("Loop duration:", elapsed, "seconds")
     
@@ -60,6 +64,3 @@ def start_motor(state):
 
 def stop_motor():
     stop_event.set()
-    
-    
-    

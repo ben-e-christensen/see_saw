@@ -6,6 +6,7 @@ import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from states import temperature_state
 
 # --- HARDWARE SAFE IMPORT ---
 try:
@@ -105,17 +106,15 @@ def launch_pht_window(parent):
                     p = sensor.pressure
                     h = sensor.relative_humidity
                 except: pass
-            else:
-                # Simulation defaults if no hardware
-                import random
-                t = 25.0 + random.uniform(-0.1, 0.1)
-                p = 1013.0 + random.uniform(-1, 1)
-                h = 45.0 + random.uniform(-0.5, 0.5)
 
             # Update Shared State
+            
             latest_readings["temp"] = t
+            temperature_state["t"] = t
             latest_readings["pressure"] = p
+            temperature_state["p"] = p
             latest_readings["humidity"] = h
+            temperature_state["h"] = h
             
             # Update UI Text (Thread-safe enough for Tkinter Vars)
             try:
