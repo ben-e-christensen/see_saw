@@ -8,13 +8,14 @@ from datetime import datetime
 from queue import Queue
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from daqhats import mcc118
-import numpy as np 
+from smbus2 import SMBus
+import numpy as np
 
 # Your Logic Modules (Ensure these remain accessible in your path)
 from motor_module import adjust_speed, start_motor, stop_motor
 from helpers import calc_spin, update_tkinter_input_box
 from states import motor_state, temperature_state
+from adc import I2C_BUS, init_adc, read_real_voltage
 
 # --- IMPORT GUI MODULES ---
 # Adjusted for your directory structure: guis/
@@ -22,8 +23,7 @@ from guis.gui_pht import launch_pht_window
 from guis.gui_peaks import launch_peak_window
 
 # --- CONFIG ---
-CHANNEL = 1
-SAMPLE_INTERVAL = 0.01     
+SAMPLE_INTERVAL = 0.01
 BUFFER_SIZE = 1000       
 MAX_PEAK_HISTORY = 10000  
 TRIGGER_BELOW = -0.01
@@ -55,7 +55,7 @@ pht_history = {
 
 # --- FILE SYSTEM ---
 def setup_trial_folder():
-    usb_drive = "/media/ben/2BDC-13B9"
+    usb_drive = "/media/ben/2BDC-13B91"
     if not os.path.exists(usb_drive):
         print(f"Drive not found at {usb_drive}. Saving locally.")
         base_folder = "Trials"
@@ -84,18 +84,19 @@ def setup_trial_folder():
     return csv_path
 
 def daq_thread():
-    """Reads voltage from MCC118 HAT in a background thread."""
+    """Reads voltage from the ADS1115/INA159 front end (Faraday Cup, /dev/i2c-1)
+    in a background thread."""
     try:
-        hat = mcc118()
-        while not stop_event.is_set():
-            try:
-                val = hat.a_in_read(CHANNEL)
-                data_queue.put(val)
-            except Exception as e:
-                print(f"DAQ Read Error: {e}")
-                time.sleep(0.1)
-            time.sleep(SAMPLE_INTERVAL)
-        hat.a_in_scan_stop()
+        with SMBus(I2C_BUS) as bus:
+            init_adc(bus)
+            while not stop_event.is_set():
+                try:
+                    val = read_real_voltage(bus)
+                    data_queue.put(val)
+                except Exception as e:
+                    print(f"DAQ Read Error: {e}")
+                    time.sleep(0.1)
+                time.sleep(SAMPLE_INTERVAL)
     except Exception as e:
         print(f"DAQ Initialization Failed: {e}")
 

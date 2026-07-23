@@ -60,8 +60,6 @@ def start_motor(state):
     thread = threading.Thread(target=motor_control, args=(state, True))
     thread.start()
 
-    
-
 def stop_motor():
     print('stop running')
     stop_event.set()

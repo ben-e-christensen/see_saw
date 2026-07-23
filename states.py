@@ -21,8 +21,8 @@ temperature_state = {
 }
 
 experiment_state = {
-    "start_time": None,      # When the user clicked Start
-    "is_running": False,     # Is the timer active?
-    "duration_days": 0.0,    # Target duration
+    "start_time": None,      
+    "is_running": False,     
+    "duration_days": 0.0,   
     "elapsed_str": "00:00:00"
 }
