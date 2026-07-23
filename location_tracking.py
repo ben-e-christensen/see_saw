@@ -19,9 +19,11 @@ def track():
                 print('inside if')
                 last_peak_time = time.time()
                 motor_state['time_since_peak'] = 0.0
-                    
-                start_motor(motor_state)
+                stop_motor()
+                time.sleep(1)
                 reverse_direction()
+                start_motor(motor_state)
+
                 flag = True
                 motor_state['peak'] = False
                 time.sleep(0.5)

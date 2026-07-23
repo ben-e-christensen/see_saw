@@ -63,4 +63,5 @@ def start_motor(state):
     
 
 def stop_motor():
+    print('stop running')
     stop_event.set()
