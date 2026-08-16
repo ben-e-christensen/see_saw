@@ -7,7 +7,7 @@ from smbus2 import SMBus
 
 # --- Hardware Configuration ---
 I2C_BUS = 1
-ADC_ADDR = 0x48  
+ADC_ADDR = 0x48   # kept as the default for this module's own __main__ demo below
 
 REG_CONVERSION = 0x00
 REG_CONFIG = 0x01
@@ -30,12 +30,12 @@ data_y = deque(maxlen=MAX_POINTS)
 
 stop_event = threading.Event()
 
-def init_adc(bus):
-    bus.write_i2c_block_data(ADC_ADDR, REG_CONFIG, CONFIG_VAL)
+def init_adc(bus, addr=ADC_ADDR):
+    bus.write_i2c_block_data(addr, REG_CONFIG, CONFIG_VAL)
     time.sleep(0.1)
 
-def read_real_voltage(bus):
-    data = bus.read_i2c_block_data(ADC_ADDR, REG_CONVERSION, 2)
+def read_real_voltage(bus, addr=ADC_ADDR):
+    data = bus.read_i2c_block_data(addr, REG_CONVERSION, 2)
     raw_counts = (data[0] << 8) | data[1]
     
     if raw_counts > 32767:

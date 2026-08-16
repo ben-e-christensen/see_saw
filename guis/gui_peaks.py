@@ -3,13 +3,13 @@ from tkinter import ttk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-def launch_peak_window(parent):
+def launch_peak_window(parent, title="Discrete Peak Monitor"):
     """
-    Builds the 'Discrete Peak Monitor' window.
+    Builds a 'Discrete Peak Monitor' window.
     Returns a dictionary containing the UI elements needed for updates.
     """
     peak_win = tk.Toplevel(parent)
-    peak_win.title("Discrete Peak Monitor")
+    peak_win.title(title)
     peak_win.geometry("900x450")
 
     # --- Layout Frames ---
@@ -21,7 +21,7 @@ def launch_peak_window(parent):
 
     # --- Matplotlib Plot ---
     fig_peak, ax_peak = plt.subplots(figsize=(5, 4))
-    ax_peak.set_title("DT Detected Peaks History")
+    ax_peak.set_title(title)
     ax_peak.set_xlabel("Peak Count")
     ax_peak.set_ylabel("Voltage")
     ax_peak.grid(True, linestyle='--', alpha=0.5)

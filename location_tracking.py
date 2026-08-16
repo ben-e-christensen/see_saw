@@ -17,7 +17,7 @@ def track():
 
             if is_low and not was_low:
                 stop_motor()
-                time.sleep(1)
+                time.sleep(3)
                 reverse_direction()
                 start_motor(motor_state)
 
